@@ -1,0 +1,27 @@
+# deployment/challenger-deployment.yaml — Challenger deployment (US 4.1)
+# Receives 20% of traffic in the A/B testing setup.
+# Points to a newer model version for comparison against the champion.
+
+$schema: https://azuremlschemas.azureedge.net/latest/managedOnlineDeployment.schema.json
+
+name: challenger
+endpoint_name: breast-cancer-endpoint
+description: "Challenger model — new version under evaluation (20% traffic)"
+
+# ── Model: point to a specific newer version to compare ───────────────────
+# Change the version number after registering a new training run
+model: azureml:breast-cancer-classifier@latest
+
+# ── Scoring script ─────────────────────────────────────────────────────────
+code_configuration:
+  code: ../src
+  scoring_script: score.py
+
+# ── Environment: same pinned versions (fixes Bug 1) ───────────────────────
+environment:
+  image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04
+  conda_file: ../conda.yaml
+
+# ── Compute ────────────────────────────────────────────────────────────────
+instance_type: Standard_DS2_v2
+instance_count: 1

@@ -1,0 +1,10 @@
+# deployment/endpoint.yaml — Managed Online Endpoint definition (US 3.2)
+# Creates the endpoint URL. Deployments (champion/challenger) are attached separately.
+
+$schema: https://azuremlschemas.azureedge.net/latest/managedOnlineEndpoint.schema.json
+
+name: breast-cancer-endpoint
+description: "MLOps internship endpoint — breast cancer classifier with A/B testing"
+
+# public_access: allows calls from anywhere (fine for dev/internship)
+auth_mode: key

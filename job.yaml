@@ -1,0 +1,43 @@
+# job.yaml — Azure ML Command Job (US 2.2)
+# Submits train.py to the remote compute cluster.
+#
+# How to run:
+#   az ml job create --file job.yaml \
+#     --workspace-name mlops-workspace-smartovate \
+#     --resource-group wiemjlassi
+
+$schema: https://azuremlschemas.azureedge.net/latest/commandJob.schema.json
+
+type: command
+
+# ── Experiment name (groups runs in Azure ML Studio) ──────────────────────
+experiment_name: breast-cancer-classifier
+
+# ── Display name shown in the Azure ML Studio UI ──────────────────────────
+display_name: random-forest-baseline
+
+# ── The command to run ────────────────────────────────────────────────────
+command: >-
+  python src/train.py
+  --n_estimators ${{inputs.n_estimators}}
+  --max_depth ${{inputs.max_depth}}
+
+# ── Configurable inputs (change without editing the command) ──────────────
+inputs:
+  n_estimators:
+    type: integer
+    default: 100
+  max_depth:
+    type: integer
+    default: 5
+
+# ── Environment: uses the pinned conda.yaml (fixes Bug 1) ─────────────────
+environment:
+  image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04
+  conda_file: conda.yaml
+
+# ── Compute: targets the cluster you just created ─────────────────────────
+compute: azureml:cpu-cluster
+
+# ── Source code folder to upload ──────────────────────────────────────────
+code: .

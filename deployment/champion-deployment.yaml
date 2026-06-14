@@ -1,0 +1,29 @@
+# deployment/champion-deployment.yaml — Champion deployment (US 4.1)
+# Receives 80% of traffic in the A/B testing setup.
+# The model version is pulled directly from the Azure ML Model Registry.
+
+$schema: https://azuremlschemas.azureedge.net/latest/managedOnlineDeployment.schema.json
+
+name: champion
+endpoint_name: breast-cancer-endpoint
+description: "Champion model — stable production version (80% traffic)"
+
+# ── Model: pulled from the registry by name + version ─────────────────────
+model: azureml:breast-cancer-classifier@latest
+
+# ── Scoring script ─────────────────────────────────────────────────────────
+code_configuration:
+  code: ../src
+  scoring_script: score.py
+
+# ── Environment: same pinned versions as training (fixes Bug 1) ────────────
+environment:
+  image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04
+  conda_file: ../conda.yaml
+
+# ── Compute: smallest instance sufficient for real-time inference ──────────
+instance_type: Standard_DS2_v2
+instance_count: 1
+
+# ── Traffic: set in the A/B testing step, not here ────────────────────────
+# Traffic allocation is handled by the endpoint traffic rules (see ab-testing.yaml)

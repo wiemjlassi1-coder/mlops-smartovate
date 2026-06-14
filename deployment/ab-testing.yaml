@@ -1,0 +1,19 @@
+# deployment/ab-testing.yaml — Traffic routing for A/B testing (US 4.1)
+# Run this AFTER both champion and challenger deployments exist.
+#
+# How to apply:
+#   az ml online-endpoint update \
+#     --file deployment/ab-testing.yaml \
+#     --name breast-cancer-endpoint \
+#     --workspace-name mlops-workspace-smartovate \
+#     --resource-group wiemjlassi
+
+$schema: https://azuremlschemas.azureedge.net/latest/managedOnlineEndpoint.schema.json
+
+name: breast-cancer-endpoint
+auth_mode: key
+
+# ── Traffic split: 80% champion, 20% challenger (US 4.1 acceptance criteria)
+traffic:
+  champion: 80
+  challenger: 20

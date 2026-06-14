@@ -1,0 +1,57 @@
+# .github/workflows/cd.yml — CD Pipeline (US 3.2)
+# Triggers when a new model is registered in Azure ML (via workflow_dispatch
+# or automatically after CI passes on main).
+# Deploys the latest registered model to a Managed Online Endpoint.
+
+name: CD – deploy model to endpoint
+
+on:
+  workflow_dispatch:           # manual trigger (for testing)
+  workflow_run:                # automatic trigger after CI passes
+    workflows: ["CI – lint and test"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45        # endpoint provisioning can take 20–30 min (fixes Bug 2)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Install Azure ML CLI extension
+        run: az extension add --name ml --yes
+
+      - name: Set default workspace
+        run: |
+          az configure --defaults \
+            group=wiemjlassi \
+            workspace=mlops-workspace-smartovate
+
+      - name: Create or update Managed Online Endpoint
+        run: |
+          az ml online-endpoint create \
+            --file deployment/endpoint.yaml \
+            --name breast-cancer-endpoint \
+            || echo "Endpoint already exists, skipping create."
+
+      - name: Deploy champion model (blue deployment)
+        run: |
+          az ml online-deployment create \
+            --file deployment/champion-deployment.yaml \
+            --endpoint-name breast-cancer-endpoint \
+            --all-traffic
+
+      - name: Verify endpoint returns HTTP 200
+        run: |
+          az ml online-endpoint invoke \
+            --name breast-cancer-endpoint \
+            --request-file deployment/sample-input.json
