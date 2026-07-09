@@ -1,7 +1,11 @@
 """
-train.py — Baseline training script (US 1.2 + US 2.1)
+train.py — Production training script (US 1.2 + US 2.1 + MLOPS-8)
 Trains a Random Forest on the breast cancer dataset.
 MLflow tracking is included from the start (covers US 2.1 automatically).
+
+Default hyperparameters (n_estimators=50, max_depth=7) were selected via
+the Azure ML Sweep Job (MLOPS-8), which found this configuration matches
+the original baseline's accuracy (0.9561) with fewer estimators.
 """
 
 import argparse
@@ -75,8 +79,10 @@ def train(n_estimators: int, max_depth: int):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--n_estimators", type=int, default=100)
-    parser.add_argument("--max_depth",    type=int, default=5)
+    # Defaults updated post-MLOPS-8: sweep found n_estimators=50, max_depth=7
+    # matches baseline accuracy (0.9561) with a smaller, faster model.
+    parser.add_argument("--n_estimators", type=int, default=50)
+    parser.add_argument("--max_depth",    type=int, default=7)
     args = parser.parse_args()
 
     train(

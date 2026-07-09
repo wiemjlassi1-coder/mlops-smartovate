@@ -5,12 +5,13 @@ type: command
 experiment_name: breast-cancer-classifier
 display_name: random-forest-baseline
 
-command: python src/train.py --n_estimators 100 --max_depth 5
+command: python src/train.py --n_estimators 50 --max_depth 7
 
 environment:
   image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04
   conda_file: conda.yaml
 
-compute: azureml:cpu-cluster
+compute: azureml:cpu-cluster-v2
 
 code: .
+

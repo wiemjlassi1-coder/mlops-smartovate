@@ -13,8 +13,7 @@ trial:
     image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04
     conda_file: conda.yaml
 
-compute: azureml:cpu-cluster
-
+compute: azureml:cpu-cluster-v2
 sampling_algorithm: grid
 
 search_space:
