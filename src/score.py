@@ -1,24 +1,42 @@
 """
 score.py — Inference script for the Managed Online Endpoint (US 3.2)
 Azure ML calls init() once at startup and run() on every prediction request.
+
+Note (MLOPS-11): the registered model is a raw pickle file (outputs/model.pkl),
+not an MLflow-format model — mlflow.sklearn.log_model() failed during MLOPS-6
+(HTTP 404, documented in the rapport), so the model was serialized manually
+via pickle.dump(). init() therefore loads it with pickle, not
+mlflow.sklearn.load_model().
 """
 
+import glob
 import json
 import os
-import numpy as np
+import pickle
+
 import pandas as pd
-import mlflow.sklearn
 
 
 def init():
-    """Load the model from the Azure ML model registry at startup."""
+    """Load the model from the Azure ML model mount directory at startup."""
     global model
 
-    model_path = os.path.join(
-        os.getenv("AZUREML_MODEL_DIR", "."), "model"
-    )
-    model = mlflow.sklearn.load_model(model_path)
-    print("Model loaded successfully.")
+    model_dir = os.getenv("AZUREML_MODEL_DIR", ".")
+
+    # The exact subpath under AZUREML_MODEL_DIR can vary depending on how the
+    # model was registered (single-file vs. folder-based registration), so we
+    # search for the .pkl file rather than hardcoding a path.
+    candidates = glob.glob(os.path.join(model_dir, "**", "*.pkl"), recursive=True)
+    if not candidates:
+        raise FileNotFoundError(
+            f"No .pkl model file found under AZUREML_MODEL_DIR={model_dir}"
+        )
+
+    model_path = candidates[0]
+    with open(model_path, "rb") as f:
+        model = pickle.load(f)
+
+    print(f"Model loaded successfully from {model_path}")
 
 
 def run(raw_data: str) -> str:
@@ -43,3 +61,4 @@ def run(raw_data: str) -> str:
 
     except Exception as e:
         return json.dumps({"error": str(e)})
+    
