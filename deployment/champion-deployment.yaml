@@ -1,15 +1,17 @@
 # deployment/champion-deployment.yaml — Champion deployment (US 4.1)
 # Receives 80% of traffic in the A/B testing setup.
-# The model version is pulled directly from the Azure ML Model Registry.
+# Pinned to version 1 explicitly (the MLOPS-8 tuned model) so it cannot
+# silently drift if a newer model version is registered later (e.g. the
+# challenger). Only the challenger tracks @latest.
 
 $schema: https://azuremlschemas.azureedge.net/latest/managedOnlineDeployment.schema.json
 
 name: champion
 endpoint_name: breast-cancer-endpoint
-description: "Champion model — stable production version (80% traffic)"
+description: "Champion model — MLOPS-8 tuned version (n_estimators=50, max_depth=7), 80% traffic"
 
-# ── Model: pulled from the registry by name + version ─────────────────────
-model: azureml:breast-cancer-classifier@latest
+# ── Model: pinned to version 1 (tuned via Sweep Job, MLOPS-8) ─────────────
+model: azureml:breast-cancer-classifier:1
 
 # ── Scoring script ─────────────────────────────────────────────────────────
 code_configuration:

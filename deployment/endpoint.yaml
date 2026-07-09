@@ -6,5 +6,5 @@ $schema: https://azuremlschemas.azureedge.net/latest/managedOnlineEndpoint.schem
 name: breast-cancer-endpoint
 description: "MLOps internship endpoint — breast cancer classifier with A/B testing"
 
-# public_access: allows calls from anywhere (fine for dev/internship)
+# auth_mode: key-based authentication, appropriate for this internship project
 auth_mode: key

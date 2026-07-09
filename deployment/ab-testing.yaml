@@ -13,7 +13,7 @@ $schema: https://azuremlschemas.azureedge.net/latest/managedOnlineEndpoint.schem
 name: breast-cancer-endpoint
 auth_mode: key
 
-# ── Traffic split: 80% champion, 20% challenger (US 4.1 acceptance criteria)
+# ── Traffic split: 80% champion (tuned), 20% challenger (baseline) ────────
 traffic:
   champion: 80
   challenger: 20
