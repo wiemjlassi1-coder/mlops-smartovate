@@ -63,12 +63,13 @@ def train(n_estimators: int, max_depth: int):
         print(f"F1-Score : {f1:.4f}")
 
         # ── Log model artefact ───────────────────────────────────────────
-        mlflow.sklearn.log_model(
-            sk_model=model,
-            artifact_path="model",
-            registered_model_name="breast-cancer-classifier",
-        )
+        import os
+        import pickle
+        os.makedirs("outputs", exist_ok=True)
+        with open("outputs/model.pkl", "wb") as f:
+            pickle.dump(model, f)
 
+        print("Model saved to outputs/model.pkl")
         print("Model logged to MLflow.")
 
 

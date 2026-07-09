@@ -1,0 +1,39 @@
+$schema: https://azuremlschemas.azureedge.net/latest/sweepJob.schema.json
+type: sweep
+
+# Le job "trial" — identique à votre job.yaml existant, mais sans valeurs fixes
+# pour n_estimators et max_depth (elles seront injectées par le sweep)
+trial:
+  code: .
+  command: >-
+    python src/train.py
+    --n_estimators ${{search_space.n_estimators}}
+    --max_depth ${{search_space.max_depth}}
+  environment:
+    image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04
+    conda_file: conda.yaml
+
+compute: azureml:cpu-cluster
+
+sampling_algorithm: grid
+
+search_space:
+  n_estimators:
+    type: choice
+    values: [50, 100, 150, 200]
+  max_depth:
+    type: choice
+    values: [3, 5, 7, 10]
+
+objective:
+  goal: maximize
+  primary_metric: accuracy   # doit correspondre EXACTEMENT au nom loggué dans train.py
+
+limits:
+  max_total_trials: 16
+  max_concurrent_trials: 1   # cohérent avec max_instances=1 sur cpu-cluster
+  timeout: 3600              # en secondes (1h), ajustez si besoin
+
+display_name: sweep-random-forest-hyperparams
+experiment_name: breast-cancer-classifier
+description: "MLOPS-8 - Recherche d'hyperparametres (n_estimators, max_depth) via Sweep Job"
