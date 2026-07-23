@@ -1,17 +1,21 @@
 # .github/workflows/monitor-drift.yml — Drift monitoring + auto-retraining (MLOPS-14 / MLOPS-15)
-# Runs on a schedule, checks production data drift via PSI, and automatically
-# triggers retraining (and redeployment) when drift crosses the threshold.
+# Runs on a schedule: regenerates simulated production data, checks it for
+# drift via PSI (monitoring/check_drift.py), and automatically triggers a
+# retraining job when drift crosses the threshold.
 #
-# NOTE: like cd.yml, the Azure-authenticated steps here need the
-# AZURE_CREDENTIALS secret. Until that's configured (see Epic 3 notes),
-# trigger this manually via workflow_dispatch and run the retraining step
-# locally if the automated job creation fails on the login step.
+# NOTE: production data is currently simulated (monitoring/simulate_production_data.py),
+# not live endpoint traffic — see check_drift.py's docstring for why. The
+# drift *check* itself needs no Azure access (pure local computation); only
+# the retrain trigger step needs Azure login, which hits the same
+# AZURE_CREDENTIALS blocker documented for cd.yml. Until that secret is
+# configured, trigger this workflow manually (workflow_dispatch) and run
+# the retrain step's az command locally if that step fails on login.
 
 name: Monitor drift and retrain
 
 on:
   schedule:
-    - cron: '0 6 * * *'   # daily at 06:00 UTC — adjust to your traffic volume
+    - cron: '0 6 * * *'   # daily at 06:00 UTC — adjust to actual traffic cadence
   workflow_dispatch:        # manual trigger for testing
 
 jobs:
@@ -31,21 +35,15 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install numpy pandas scikit-learn azure-ai-ml azure-identity pyarrow
+          pip install numpy pandas scikit-learn
 
-      - name: Azure login
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Generate simulated production data
+        run: python monitoring/simulate_production_data.py
 
       - name: Run drift check
         id: drift
         continue-on-error: true
-        run: |
-          python monitoring/check_drift.py \
-            --subscription-id 3c3b6d94-78ba-4830-b73c-a8e2b2835dae \
-            --resource-group wiemjlassi \
-            --workspace-name mlops-workspace-smartovate
+        run: python monitoring/check_drift.py
 
   retrain:
     needs: check-drift
