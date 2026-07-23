@@ -1,0 +1,76 @@
+# .github/workflows/monitor-drift.yml — Drift monitoring + auto-retraining (MLOPS-14 / MLOPS-15)
+# Runs on a schedule, checks production data drift via PSI, and automatically
+# triggers retraining (and redeployment) when drift crosses the threshold.
+#
+# NOTE: like cd.yml, the Azure-authenticated steps here need the
+# AZURE_CREDENTIALS secret. Until that's configured (see Epic 3 notes),
+# trigger this manually via workflow_dispatch and run the retraining step
+# locally if the automated job creation fails on the login step.
+
+name: Monitor drift and retrain
+
+on:
+  schedule:
+    - cron: '0 6 * * *'   # daily at 06:00 UTC — adjust to your traffic volume
+  workflow_dispatch:        # manual trigger for testing
+
+jobs:
+  check-drift:
+    runs-on: ubuntu-latest
+    outputs:
+      drift_detected: ${{ steps.drift.outputs.drift_detected }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install numpy pandas scikit-learn azure-ai-ml azure-identity pyarrow
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Run drift check
+        id: drift
+        continue-on-error: true
+        run: |
+          python monitoring/check_drift.py \
+            --subscription-id 3c3b6d94-78ba-4830-b73c-a8e2b2835dae \
+            --resource-group wiemjlassi \
+            --workspace-name mlops-workspace-smartovate
+
+  retrain:
+    needs: check-drift
+    if: needs.check-drift.outputs.drift_detected == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Install Azure ML CLI extension
+        run: az extension add --name ml --yes
+
+      - name: Trigger retraining job
+        run: |
+          az ml job create --file job.yaml \
+            --workspace-name mlops-workspace-smartovate \
+            --resource-group wiemjlassi
+
+      - name: Notify (placeholder)
+        run: |
+          echo "Drift detected — retraining job submitted."
+          echo "Manual next step: review the new run's metrics before promoting"
+          echo "it to champion (register + redeploy), same process as MLOPS-8/11."

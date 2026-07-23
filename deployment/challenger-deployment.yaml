@@ -23,5 +23,9 @@ environment:
   conda_file: ../conda.yaml
 
 # ── Compute ────────────────────────────────────────────────────────────────
-instance_type: Standard_DS2_v2
+# ── Compute: E2s_v3 — F1s_v2 failed to schedule (no container logs at all,
+# suggesting a placement/availability issue with that SKU in this region).
+# Switched to ESv3 family instead, which has substantial free quota (100
+# cores) and is officially supported for Managed Online Endpoints.
+instance_type: Standard_E2s_v3
 instance_count: 1

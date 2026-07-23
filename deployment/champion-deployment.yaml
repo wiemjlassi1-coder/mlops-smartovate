@@ -3,6 +3,9 @@
 # Pinned to version 1 explicitly (the MLOPS-8 tuned model) so it cannot
 # silently drift if a newer model version is registered later (e.g. the
 # challenger). Only the challenger tracks @latest.
+#
+# data_collector added for MLOPS-14: logs model inputs/outputs to the
+# workspace's default blob datastore, which check_drift.py reads from.
 
 $schema: https://azuremlschemas.azureedge.net/latest/managedOnlineDeployment.schema.json
 
@@ -24,8 +27,16 @@ environment:
   conda_file: ../conda.yaml
 
 # ── Compute: smallest instance sufficient for real-time inference ──────────
-instance_type: Standard_DS2_v2
+instance_type: Standard_F2s_v2
 instance_count: 1
+
+# ── Data collection (MLOPS-14): logs every request/response for drift monitoring
+data_collector:
+  collections:
+    model_inputs:
+      enabled: 'true'
+    model_outputs:
+      enabled: 'true'
 
 # ── Traffic: set in the A/B testing step, not here ────────────────────────
 # Traffic allocation is handled by the endpoint traffic rules (see ab-testing.yaml)
